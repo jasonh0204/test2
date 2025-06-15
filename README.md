@@ -4,7 +4,10 @@ game
 ## Flappy Bird Game
 
 This repository contains a simple Flappy Bird clone written in Python.  The game
-now uses PyOpenGL to render a very basic 3‑D version of the bird and pipes.
+uses PyOpenGL to render a larger 3‑D scene with increased screen resolution.
+The bird has basic wing animation. If a file named `hit.wav` is placed
+alongside `flappy.py`, a short sound effect will play whenever the bird
+collides with a pipe or the ground.
 
 ### Requirements
 - Python 3

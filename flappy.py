@@ -3,15 +3,17 @@ from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import random
+import math
+import os
 
 # Game constants
-SCREEN_WIDTH = 288
-SCREEN_HEIGHT = 512
-GROUND_HEIGHT = 100
-BIRD_SIZE = 32
-PIPE_WIDTH = 52
+SCREEN_WIDTH = 576
+SCREEN_HEIGHT = 1024
+GROUND_HEIGHT = 200
+BIRD_SIZE = 64
+PIPE_WIDTH = 104
 PIPE_DEPTH = 52
-PIPE_GAP = 100
+PIPE_GAP = 200
 FPS = 60
 
 class Bird:
@@ -26,10 +28,12 @@ class Bird:
         self.gravity = -0.5
         self.flap_power = 7
         self.orientation = 0
+        self.wing_phase = 0
 
     def update(self):
         self.vel += self.gravity
         self.y += self.vel
+        self.wing_phase = (self.wing_phase + 0.3) % (2 * 3.14159)
 
     def flap(self):
         self.vel = self.flap_power
@@ -112,6 +116,38 @@ def draw_box(box, color):
     glPopMatrix()
 
 
+def draw_bird(bird):
+    # Body
+    draw_box(bird.get_aabb(), (255, 255, 0))
+
+    wing_span = BIRD_SIZE
+    wing_width = BIRD_SIZE / 4
+    angle = math.sin(bird.wing_phase) * 30
+    glColor3f(1, 0, 0)
+
+    # Left wing
+    glPushMatrix()
+    glTranslatef(bird.x, bird.y + BIRD_SIZE / 2, -bird.z - 200)
+    glRotatef(angle, 0, 0, 1)
+    glBegin(GL_TRIANGLES)
+    glVertex3f(0, 0, 0)
+    glVertex3f(-wing_span, 0, 0)
+    glVertex3f(0, wing_width, 0)
+    glEnd()
+    glPopMatrix()
+
+    # Right wing
+    glPushMatrix()
+    glTranslatef(bird.x + BIRD_SIZE, bird.y + BIRD_SIZE / 2, -bird.z - 200)
+    glRotatef(-angle, 0, 0, 1)
+    glBegin(GL_TRIANGLES)
+    glVertex3f(0, 0, 0)
+    glVertex3f(wing_span, 0, 0)
+    glVertex3f(0, wing_width, 0)
+    glEnd()
+    glPopMatrix()
+
+
 def init_gl():
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
     glMatrixMode(GL_PROJECTION)
@@ -123,6 +159,11 @@ def init_gl():
 
 def main():
     pygame.init()
+    try:
+        pygame.mixer.init()
+        hit_sound = pygame.mixer.Sound('hit.wav') if os.path.exists('hit.wav') else None
+    except pygame.error:
+        hit_sound = None
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), DOUBLEBUF | OPENGL)
     clock = pygame.time.Clock()
     init_gl()
@@ -155,8 +196,12 @@ def main():
         bird_box = bird.get_aabb()
         for top, bottom in pipes:
             if aabb_intersect(bird_box, top.get_aabb()) or aabb_intersect(bird_box, bottom.get_aabb()):
+                if hit_sound:
+                    hit_sound.play()
                 running = False
         if bird.y + BIRD_SIZE > SCREEN_HEIGHT - GROUND_HEIGHT:
+            if hit_sound:
+                hit_sound.play()
             running = False
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -167,7 +212,7 @@ def main():
             draw_box(top.get_aabb(), (0, 255, 0))
             draw_box(bottom.get_aabb(), (0, 255, 0))
 
-        draw_box(bird.get_aabb(), (255, 255, 0))
+        draw_bird(bird)
         pygame.display.flip()
         clock.tick(FPS)
 
