@@ -20,8 +20,11 @@ class Bird:
         self.y = SCREEN_HEIGHT // 2
         self.z = 0
         self.vel = 0
-        self.gravity = 0.5
-        self.flap_power = -7
+        # Positive y is upward in the OpenGL view, so gravity should be
+        # negative to make the bird fall downward. Likewise, the flap power
+        # should be positive to move the bird upward when the player flaps.
+        self.gravity = -0.5
+        self.flap_power = 7
         self.orientation = 0
 
     def update(self):
